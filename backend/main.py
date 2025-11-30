@@ -1,6 +1,7 @@
 """Main FastAPI application for the General Purpose Agent Chat."""
 
 import os
+from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
@@ -14,6 +15,10 @@ from agent import Agent
 
 # Load environment variables
 load_dotenv()
+
+# Get absolute paths
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = BASE_DIR.parent / "frontend"
 
 app = FastAPI(
     title="General Purpose Agent Chat",
@@ -62,7 +67,10 @@ class ChatResponse(BaseModel):
 @app.get("/")
 async def root():
     """Serve the main HTML page."""
-    return FileResponse("../frontend/index.html")
+    index_path = FRONTEND_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found")
+    return FileResponse(str(index_path))
 
 
 @app.get("/health")
@@ -105,9 +113,8 @@ async def list_tools():
 
 
 # Mount static files for frontend
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
-if os.path.exists(frontend_path):
-    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 if __name__ == "__main__":
